@@ -264,8 +264,8 @@ class LazySupervisedDataset(Dataset):
         return len(self.raw_data)
 
     def multi_modal_get_item(self, data_item):
-        if '<image>' not in data_item['conversations'][0]['value']:
-            data_item['conversations'][0]['value'] = '<image>\n' + data_item['conversations'][0]['value']
+        if '<image>' not in data_item['question']:
+            data_item['question'] = '<image>\n' + data_item['question']
 
         if data_item['image'].startswith('s3://'):
             image_path = self.root + data_item['image']
@@ -295,7 +295,7 @@ class LazySupervisedDataset(Dataset):
             preprocess_function = preprocess_phi3
         else:
             preprocess_function = preprocess
-        ret = preprocess_function(self.template_name, [deepcopy(data_item['conversations'])],
+        ret = preprocess_function(self.template_name, [deepcopy(data_item['question'])],
                                   self.tokenizer, self.num_image_token * num_patches,
                                   group_by_length=self.group_by_length, ds_name=self.ds_name)
         ret = dict(
@@ -415,8 +415,9 @@ def main():
     # Parse input arguments
     # See all possible arguments in src/transformers/training_args.py
     # If use DeepSpeed zero3, init_dist must before HfArgumentParser
-    launcher = os.environ.get('LAUNCHER', 'slurm')
-    init_dist(launcher=launcher, backend='nccl')
+    launcher = os.environ.get('LAUNCHER')
+    if launcher is not None:
+        init_dist(launcher=launcher, backend='nccl')
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith('.json'):
         # If we pass only one argument to the script, and it's the path to a json file,
@@ -609,7 +610,7 @@ def main():
             v.requires_grad = True
 
     # print trainable parameters
-    if dist.get_rank() == 0:
+    if launcher is None or dist.get_rank() == 0:
         for name, param in model.named_parameters():
             if param.requires_grad:
                 logger.info(name)
