@@ -117,6 +117,12 @@ class ModelArguments:
         default=0,
         metadata={'help': 'Set the LoRA adapter rank for the LLM. Default is 0.'}
     )
+    llm_lora_last_k: int = field(
+        default=None,
+        metadata={
+            "help": "Specify the number of last layers to apply LoRA adapter. Default is None."
+        },
+    )
     unfreeze_lm_head: bool = field(
         default=False,
         metadata={'help': "Set to True to unfreeze the language model's head."},
@@ -155,12 +161,14 @@ class DataTrainingArguments:
         },
     )
     force_image_size: Optional[int] = field(
-        default=224,
-        metadata={'help': 'Set the desired size for the image. Default is 224.'},
+        default=448,
+        metadata={"help": "Set the desired size for the image. Default is 448."},
     )
     down_sample_ratio: Optional[float] = field(
-        default=1.0,
-        metadata={'help': 'Set the desired down-sampling ratio for the image. Default is 1.0.'},
+        default=0.5,
+        metadata={
+            "help": "Set the desired down-sampling ratio for the image. Default is 0.5."
+        },
     )
     pad2square: Optional[bool] = field(
         default=False,
@@ -295,9 +303,25 @@ class LazySupervisedDataset(Dataset):
             preprocess_function = preprocess_phi3
         else:
             preprocess_function = preprocess
-        ret = preprocess_function(self.template_name, [deepcopy(data_item['question'])],
-                                  self.tokenizer, self.num_image_token * num_patches,
-                                  group_by_length=self.group_by_length, ds_name=self.ds_name)
+        ret = preprocess_function(
+            self.template_name,
+            [
+                [
+                    {
+                        "from": "human",
+                        "value": deepcopy(data_item["question"]),
+                    },
+                    {
+                        "from": "gpt",
+                        "value": data_item["answer"][0],
+                    },
+                ]
+            ],
+            self.tokenizer,
+            self.num_image_token * num_patches,
+            group_by_length=self.group_by_length,
+            ds_name=self.ds_name,
+        )
         ret = dict(
             input_ids=ret['input_ids'][0],
             labels=ret['labels'][0],
@@ -597,7 +621,11 @@ def main():
         model.config.use_backbone_lora = model_args.use_backbone_lora
 
     if model_args.use_llm_lora:
-        model.wrap_llm_lora(r=model_args.use_llm_lora, lora_alpha=2 * model_args.use_llm_lora)
+        model.wrap_llm_lora(
+            r=model_args.use_llm_lora,
+            lora_alpha=2 * model_args.use_llm_lora,
+            last_k_layers=model_args.llm_lora_last_k,
+        )
         model.config.use_llm_lora = model_args.use_llm_lora
 
     if model_args.freeze_mlp:

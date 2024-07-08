@@ -98,17 +98,46 @@ class InternVLChatModel(PreTrainedModel):
         self.vision_model = get_peft_model(self.vision_model, lora_config)
         self.vision_model.print_trainable_parameters()
 
-    def wrap_llm_lora(self, r=128, lora_alpha=256, lora_dropout=0.05):
+    def wrap_llm_lora(
+        self, r=128, lora_alpha=256, lora_dropout=0.05, last_k_layers=None
+    ):
+        import re
+
+        # List of LoRA layers to match
+        lm_num_hidden_layers = self.language_model.config.num_hidden_layers
+        lora_layers = (
+            range(lm_num_hidden_layers)
+            if last_k_layers is None
+            else range(lm_num_hidden_layers - last_k_layers, lm_num_hidden_layers)
+        )
+
+        # Create a regex pattern that includes only the specified layers
+        layer_patterns = [
+            rf"model\.layers\.{layer}\.(attention\.wqkv|attention\.wo|feed_forward\.(w1|w2|w3))"
+            for layer in lora_layers
+        ]
+
+        # Combine the patterns into a single regex pattern
+        combined_pattern = re.compile("|".join(layer_patterns))
+
+        # Dynamically construct the list of target modules
+        target_modules = [
+            name
+            for name, module in self.language_model.named_modules()
+            if combined_pattern.search(name)
+        ]
+        target_modules += ["output"]
+
         lora_config = LoraConfig(
             r=r,
-            target_modules=['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'self_attn.o_proj',
-                            'mlp.gate_proj', 'mlp.down_proj', 'mlp.up_proj'],
+            target_modules=target_modules,
             lora_alpha=lora_alpha,
             lora_dropout=lora_dropout,
-            task_type='CAUSAL_LM'
+            task_type="CAUSAL_LM",
         )
         self.language_model = get_peft_model(self.language_model, lora_config)
-        self.language_model.enable_input_require_grads()
+        # Need to enable input require grads for fine tuning vision model.
+        # self.language_model.enable_input_require_grads()
         self.language_model.print_trainable_parameters()
 
     def forward(

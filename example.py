@@ -13,7 +13,7 @@ def build_transform(input_size):
     MEAN, STD = IMAGENET_MEAN, IMAGENET_STD
     transform = T.Compose(
         [
-            T.Lambda(lambda img: img.convert('RGB') if img.mode != 'RGB' else img),
+            T.Lambda(lambda img: img.convert("RGB") if img.mode != "RGB" else img),
             T.Resize((input_size, input_size), interpolation=InterpolationMode.BICUBIC),
             T.ToTensor(),
             T.Normalize(mean=MEAN, std=STD),
@@ -23,7 +23,7 @@ def build_transform(input_size):
 
 
 def find_closest_aspect_ratio(aspect_ratio, target_ratios, width, height, image_size):
-    best_ratio_diff = float('inf')
+    best_ratio_diff = float("inf")
     best_ratio = (1, 1)
     area = width * height
     for ratio in target_ratios:
@@ -85,7 +85,7 @@ def dynamic_preprocess(
 
 
 def load_image(image_file, input_size=448, max_num=6):
-    image = Image.open(image_file).convert('RGB')
+    image = Image.open(image_file).convert("RGB")
     transform = build_transform(input_size=input_size)
     images = dynamic_preprocess(
         image, image_size=input_size, use_thumbnail=True, max_num=max_num
@@ -95,7 +95,7 @@ def load_image(image_file, input_size=448, max_num=6):
     return pixel_values
 
 
-path = 'OpenGVLab/InternVL2-8B'
+path = "OpenGVLab/InternVL2-8B"
 model = (
     AutoModel.from_pretrained(
         path, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True, trust_remote_code=True
@@ -106,7 +106,7 @@ model = (
 
 tokenizer = AutoTokenizer.from_pretrained(path, trust_remote_code=True)
 # set the max number of tiles in `max_num`
-pixel_values = load_image('./examples/image1.jpg', max_num=6).to(torch.bfloat16).cuda()
+pixel_values = load_image("./examples/image1.jpg", max_num=6).to(torch.bfloat16).cuda()
 
 generation_config = dict(
     num_beams=1,
@@ -115,28 +115,28 @@ generation_config = dict(
 )
 
 # pure-text conversation (纯文本对话)
-question = 'Hello, who are you?'
+question = "Hello, who are you?"
 response, history = model.chat(
     tokenizer, None, question, generation_config, history=None, return_history=True
 )
-print(f'User: {question}')
-print(f'Assistant: {response}')
+print(f"User: {question}")
+print(f"Assistant: {response}")
 
-question = 'Can you tell me a story?'
+question = "Can you tell me a story?"
 response, history = model.chat(
     tokenizer, None, question, generation_config, history=history, return_history=True
 )
-print(f'User: {question}')
-print(f'Assistant: {response}')
+print(f"User: {question}")
+print(f"Assistant: {response}")
 
 # single-image single-round conversation (单图单轮对话)
-question = '<image>\nPlease describe the image shortly.'
+question = "<image>\nPlease describe the image shortly."
 response = model.chat(tokenizer, pixel_values, question, generation_config)
-print(f'User: {question}')
-print(f'Assistant: {response}')
+print(f"User: {question}")
+print(f"Assistant: {response}")
 
 # single-image multi-round conversation (单图多轮对话)
-question = '<image>\nPlease describe the image in detail.'
+question = "<image>\nPlease describe the image in detail."
 response, history = model.chat(
     tokenizer,
     pixel_values,
@@ -145,10 +145,10 @@ response, history = model.chat(
     history=None,
     return_history=True,
 )
-print(f'User: {question}')
-print(f'Assistant: {response}')
+print(f"User: {question}")
+print(f"Assistant: {response}")
 
-question = 'Please write a poem according to the image.'
+question = "Please write a poem according to the image."
 response, history = model.chat(
     tokenizer,
     pixel_values,
@@ -157,16 +157,16 @@ response, history = model.chat(
     history=history,
     return_history=True,
 )
-print(f'User: {question}')
-print(f'Assistant: {response}')
+print(f"User: {question}")
+print(f"Assistant: {response}")
 
 # multi-image multi-round conversation (多图多轮对话)
-pixel_values1 = load_image('./examples/image1.jpg', max_num=6).to(torch.bfloat16).cuda()
-pixel_values2 = load_image('./examples/image2.jpg', max_num=6).to(torch.bfloat16).cuda()
+pixel_values1 = load_image("./examples/image1.jpg", max_num=6).to(torch.bfloat16).cuda()
+pixel_values2 = load_image("./examples/image2.jpg", max_num=6).to(torch.bfloat16).cuda()
 pixel_values = torch.cat((pixel_values1, pixel_values2), dim=0)
 num_patches_list = [pixel_values1.size(0), pixel_values2.size(0)]
 
-question = 'Image-1: <image>\nImage-2: <image>\nDescribe the two images in detail.'
+question = "Image-1: <image>\nImage-2: <image>\nDescribe the two images in detail."
 response, history = model.chat(
     tokenizer,
     pixel_values,
@@ -176,10 +176,10 @@ response, history = model.chat(
     history=None,
     return_history=True,
 )
-print(f'User: {question}')
-print(f'Assistant: {response}')
+print(f"User: {question}")
+print(f"Assistant: {response}")
 
-question = 'What are the similarities and differences between these two images.'
+question = "What are the similarities and differences between these two images."
 response, history = model.chat(
     tokenizer,
     pixel_values,
@@ -189,16 +189,16 @@ response, history = model.chat(
     history=history,
     return_history=True,
 )
-print(f'User: {question}')
-print(f'Assistant: {response}')
+print(f"User: {question}")
+print(f"Assistant: {response}")
 
 # batch inference, single image per sample (单图批处理)
-pixel_values1 = load_image('./examples/image1.jpg', max_num=6).to(torch.bfloat16).cuda()
-pixel_values2 = load_image('./examples/image2.jpg', max_num=6).to(torch.bfloat16).cuda()
+pixel_values1 = load_image("./examples/image1.jpg", max_num=6).to(torch.bfloat16).cuda()
+pixel_values2 = load_image("./examples/image2.jpg", max_num=6).to(torch.bfloat16).cuda()
 num_patches_list = [pixel_values1.size(0), pixel_values2.size(0)]
 pixel_values = torch.cat((pixel_values1, pixel_values2), dim=0)
 
-questions = ['<image>\nDescribe the image in detail.'] * len(num_patches_list)
+questions = ["<image>\nDescribe the image in detail."] * len(num_patches_list)
 responses = model.batch_chat(
     tokenizer,
     pixel_values,
@@ -207,8 +207,9 @@ responses = model.batch_chat(
     generation_config=generation_config,
 )
 for question, response in zip(questions, responses):
-    print(f'User: {question}')
-    print(f'Assistant: {response}')
+    print(f"User: {question}")
+    print(f"Assistant: {response}")
+
 
 # video multi-round conversation (视频多轮对话)
 def get_index(bound, fps, max_frame, first_idx=0, num_segments=32):
@@ -229,7 +230,7 @@ def get_index(bound, fps, max_frame, first_idx=0, num_segments=32):
 
 
 def load_video(video_path, bound=None, input_size=448, max_num=1, num_segments=32):
-    vr = VideoReader(video_path, ctx=torch.device('cpu'), num_threads=1)
+    vr = VideoReader(video_path, ctx=torch.device("cpu"), num_threads=1)
     max_frame = len(vr) - 1
     fps = float(vr.get_avg_fps())
 
@@ -239,7 +240,7 @@ def load_video(video_path, bound=None, input_size=448, max_num=1, num_segments=3
         bound, fps, max_frame, first_idx=0, num_segments=num_segments
     )
     for frame_index in frame_indices:
-        img = Image.fromarray(vr[frame_index].asnumpy()).convert('RGB')
+        img = Image.fromarray(vr[frame_index].asnumpy()).convert("RGB")
         img = dynamic_preprocess(
             img, image_size=input_size, use_thumbnail=True, max_num=max_num
         )
@@ -251,12 +252,12 @@ def load_video(video_path, bound=None, input_size=448, max_num=1, num_segments=3
     return pixel_values, num_patches_list
 
 
-video_path = './examples/red-panda.mp4'
+video_path = "./examples/red-panda.mp4"
 # pixel_values, num_patches_list = load_video(video_path, num_segments=32, max_num=1)
 pixel_values, num_patches_list = load_video(video_path, num_segments=8, max_num=1)
 pixel_values = pixel_values.to(torch.bfloat16).cuda()
-video_prefix = ''.join([f'Frame{i+1}: <image>\n' for i in range(len(num_patches_list))])
-question = video_prefix + 'What is the red panda doing?'
+video_prefix = "".join([f"Frame{i+1}: <image>\n" for i in range(len(num_patches_list))])
+question = video_prefix + "What is the red panda doing?"
 # Frame1: <image>\nFrame2: <image>\n...\nFrame31: <image>\n{question}
 response, history = model.chat(
     tokenizer,
@@ -267,10 +268,10 @@ response, history = model.chat(
     history=None,
     return_history=True,
 )
-print(f'User: {question}')
-print(f'Assistant: {response}')
+print(f"User: {question}")
+print(f"Assistant: {response}")
 
-question = 'Describe this video in detail.'
+question = "Describe this video in detail."
 response, history = model.chat(
     tokenizer,
     pixel_values,
@@ -280,5 +281,5 @@ response, history = model.chat(
     history=history,
     return_history=True,
 )
-print(f'User: {question}')
-print(f'Assistant: {response}')
+print(f"User: {question}")
+print(f"Assistant: {response}")
