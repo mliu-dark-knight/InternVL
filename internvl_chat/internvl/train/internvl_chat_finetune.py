@@ -439,9 +439,8 @@ def main():
     # Parse input arguments
     # See all possible arguments in src/transformers/training_args.py
     # If use DeepSpeed zero3, init_dist must before HfArgumentParser
-    launcher = os.environ.get('LAUNCHER')
-    if launcher is not None:
-        init_dist(launcher=launcher, backend='nccl')
+    launcher = os.environ.get("LAUNCHER", "pytorch")
+    init_dist(launcher=launcher, backend="nccl")
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith('.json'):
         # If we pass only one argument to the script, and it's the path to a json file,
@@ -638,7 +637,7 @@ def main():
             v.requires_grad = True
 
     # print trainable parameters
-    if launcher is None or dist.get_rank() == 0:
+    if dist.get_rank() == 0:
         for name, param in model.named_parameters():
             if param.requires_grad:
                 logger.info(name)
